@@ -11,6 +11,8 @@ Original file is located at
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+!pip install torch
+import torch
 # %matplotlib inline
 
 def f(x):
@@ -45,6 +47,9 @@ class Value:
     out._backward=_backward
 
     return out
+
+  def __radd__(self, other):
+    return self+other
 
   def __sub__(self, other):
     return self+(-other)
@@ -161,10 +166,50 @@ x2w2=x2*w2; x2w2.label='x2*w2'
 x1w1x2w2=x1w1+x2w2; x1w1x2w2.label='x1w1+x2w2'
 n=x1w1x2w2+b; n.label='n'
 # ******
-o=n.tanh();
+e=(2*n).exp()
+o=(e-1)/ (e+1)
 # ******
 o.label='o'
 o.backward()
 
 draw_dot(o)
+
+#implementation of micrograd using pytorch
+
+x1=torch.Tensor([2.0]).double()                       ;x1.requires_grad=True#python uses double for precision so we use this to float32(pytorch):float64(python)
+x2=torch.Tensor([0.0]).double()                       ;x2.requires_grad=True
+w1=torch.Tensor([-3.0]).double()                      ;w1.requires_grad=True
+w2=torch.Tensor([1.0]).double()                       ;w2.requires_grad=True
+b=torch.Tensor([6.8813735870195432]).double()         ;b.requires_grad=True
+n=x1*w1+x2*w2+b
+o=torch.tanh(n)
+
+print(o.data.item())#returns element, stripping out the tensor
+o.backward()
+print('---')
+print('x2', x2.grad.item())
+print('w2', w2.grad.item())
+print('x1', x2.grad.item())
+print('w1', w1.grad.item())
+
+o
+
+o.item()
+
+import random
+
+class Neuron:
+  def __init__(self, nin):
+    self.w=[Value(random.uniform(-1, 1)) for _ in range(nin)]#weights
+    self.b=Value(random.uniform(-1, 1))#controls trigger happiness, bias
+
+  def __call__(self, x):
+    #w*x+b
+    act=sum((wi*xi for wi, xi in zip(self.w, x)), self.b)
+    out=act.tanh()
+    return out
+
+x=[2.0, 3.0]
+n=Neuron(2)
+n(x)
 
